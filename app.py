@@ -10,7 +10,8 @@ import json
 from sassutils.wsgi import SassMiddleware
 import secrets
 from flask_sqlalchemy import SQLAlchemy
-
+import string
+import random
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -28,8 +29,8 @@ db = SQLAlchemy(app)
 
 class rubixColors(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(60), unique=True) # so we don't accidently get 2 identical codes
-    colors = db.Column(db.String(54))
+    code = db.Column(db.String(4), unique=True) # so we don't accidently get 2 identical codes
+    colors = db.Column(db.String(800))
     
     def __repr__(self):
         return '<rubixColors {}>'.format(self.code)
@@ -103,7 +104,6 @@ def change():
     
     #cv2.imshow("frame", finalFixed)
     #cv2.waitKey(0)
-    
     return Response(json.dumps({"image": jpg_as_text_final.decode('utf-8'), "colors_matrix": response["colors_matrix"]}))
                     
                     
@@ -111,8 +111,27 @@ def change():
 def getCode():
     if request.method == 'POST':
         listOfMatrices = request.get_json()['storeColors']
-                    
-                    
+        matrixString = ''.join([''.join(''.join(x[0] for x in y) for y in matrix) for matrix in listOfMatrices]) #only first letter
+        passCode = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
+        row = rubixColors(code=passCode, colors=matrixString)
+        db.session.add(row)
+        db.session.commit()
+        app.logger.info(matrixString)
+        return Response(json.dumps({"code": passCode}))
+        
+@app.route("/useCode", methods=['POST', 'GET'])
+def useCode():
+    app.logger.info(request.get_json())
+    stringColor = rubixColors.query.filter_by(code=request.get_json()['code']).first().colors
+    app.logger.info(stringColor)
+    return Response(json.dumps({"stringColor": stringColor}))
+    
+@app.route("/getExe")
+def getExe():
+    return send_file('rubix.exe',
+                     mimetype='application/exe',
+                     attachment_filename='rubix.exe',
+                     as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)

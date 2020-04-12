@@ -26,7 +26,7 @@ def detect(image, colors=None):
         'blue': ([69, 120, 100], [179, 255, 255]),    
         'yellow': ([21, 110, 117], [45, 255, 255]),   
         'orange': ([0, 110, 125], [20, 255, 255]),
-        'red': ([161, 155, 84], [179, 255, 255]),
+        'red': ([0, 100, 100], [10, 255, 255]),
         'green': ([36,100,50], [86,255,255]),
         'white': ([0, 0, 150], [255, 100, 255])
         }
@@ -73,11 +73,11 @@ def detect(image, colors=None):
     cnts = cv2.findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     cnts = imutils.grab_contours(cnts)
-    cnts = list(filter(lambda cnt: math.isclose(cv2.contourArea(cnt), reduce(lambda x,y:x*y,cv2.boundingRect(cnt)[2:]), rel_tol=0.1), cnts))
+    cnts = list(filter(lambda cnt: math.isclose(cv2.contourArea(cnt), reduce(lambda x,y:x*y,cv2.boundingRect(cnt)[2:]), rel_tol=0.2), cnts))
     # if area nigga is smoll boi then fuck off to oblivion
+    # cnts = list(filter(lambda cnt: cv2.contourArea(cnt) > 100, cnts))
     
-    
-    
+    print(len(cnts))
     
     cnts = sorted(cnts, key=lambda c: cv2.boundingRect(c)[1], reverse=False) # sort top to bottom
     cnts_matrix = [sorted(cnts[i*3:(i+1)*3], key=lambda c: cv2.boundingRect(c)[0], reverse=False) for i in range(3)] # left to right
@@ -91,13 +91,18 @@ def detect(image, colors=None):
     "minY" : np.inf
     }
     
+    
+    
+    # for c in cnts:
+    #     cv2.drawContours(original, [c], -1, (0, 255, 0), 2)
+    
     for y in range(len(cnts_matrix)):
         for x in range(len(cnts_matrix[0])):
             c = cnts_matrix[y][x]
-            
+    
             epsilon = 0.05*cv2.arcLength(c,True)
             c_original = cv2.approxPolyDP(c,epsilon,True)
-            
+    
             c_for_extract = [points[0] for points in c_original]
             c = c_for_extract 
             for key in list(maxmin.keys()):
@@ -109,14 +114,14 @@ def detect(image, colors=None):
                 elif key[:-1] == 'min':
                     if candidate < maxmin[key]:
                         maxmin[key] = candidate
-                
+    
             c = c_original
-            
+    
             mask = np.zeros(lab_image.shape[:2], dtype="uint8")
             cv2.drawContours(mask, [c], -1, 255, -1)
             mask = cv2.erode(mask, None, iterations=2)
             mean = cv2.mean(lab_image, mask=mask)[:3]
-            
+    
             minimum = [10000000, None] # the second in the list will hold the count (index of color in lab_space)
             for count, row in enumerate(lab_space):
                 d = dist.euclidean(row[0], mean) # row[0] is the color because they're in column inside lab_space
@@ -125,10 +130,10 @@ def detect(image, colors=None):
             text = list(colors_lab.keys())[minimum[1]]
             colors_matrix[y][x] = text
             #cv2.drawContours(original, [c], -1, (0, 255, 0), 2)
-            
+    
             xx,yy,w,h = cv2.boundingRect(c)
             cv2.rectangle(original,(xx,yy),(xx+w,yy+h),(0,255,0),2)
-            
+    
             ratio = 1
             M = cv2.moments(c)
             cX = int((M["m10"] / M["m00"]) * ratio)
@@ -142,7 +147,7 @@ def detect(image, colors=None):
     return {"image": original, "colors_matrix": colors_matrix}    
 
 if __name__ == '__main__':
-    detect(cv2.imread('2.jpeg'))
+    detect(cv2.imread('o2.jpeg'))
 
 # def get_color_name(self, hsv):
 #         """ Get the name of the color based on the hue.

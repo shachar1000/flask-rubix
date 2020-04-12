@@ -131,7 +131,7 @@
             processData: false,
             contentType: "application/json; charset=utf-8",
             success: function(resp) { 
-              console.log(resp)
+              alert(resp)
             }
           });
         }
@@ -254,6 +254,7 @@
                 document.getElementsByClassName("grid")[0].style.gridTemplateAreas = '"cool cool cool cool cool" "progress imageDivWait imageDivWait uploadDiv uploadDiv" "progress imageDivWait imageDivWait uploadDiv uploadDiv"'
                 $(".uploadDiv").css('display', "");
                 storeColors.push(resp.colors_matrix);
+                fullColors()
               });  
               
               
@@ -394,6 +395,7 @@
                 $("#fixed").click(function(){
                   alert("fixed");
                   storeColors.push(response.colors_matrix);
+                  fullColors()
                   console.log(storeColors);
                   ctx.clearRect(0, 0, canvas.width, canvas.height);
                   middle_color = response.colors_matrix[1][1];
